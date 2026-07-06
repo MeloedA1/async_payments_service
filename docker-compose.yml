@@ -1,0 +1,70 @@
+services:
+  #  -------------------------------------------------------------------------------------------------------------
+  #  -------------------------------------------- databases ------------------------------------------------------
+  #  -------------------------------------------------------------------------------------------------------------
+  postgres_db:
+    image: postgres:17
+    restart: always
+    shm_size: 128mb
+    environment:
+      POSTGRES_USER: test_user
+      POSTGRES_PASSWORD: 12345
+      POSTGRES_DB: payments_db
+    ports:
+      - "5435:5432"
+  rabbitmq:
+    image: rabbitmq:management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: 12345
+      RABBITMQ_DEFAULT_VHOST: payments
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+      - rabbitmq_log:/var/log/rabbitmq
+  payments_service_api:
+    build:
+      context: ../async_payments_service/
+      dockerfile: .deploy/Dockerfile
+    command: sh -c "alembic upgrade head && uvicorn src.entrypoints.rest.main:app --host 0.0.0.0 --port 8010"
+    container_name: payments_service_api
+    depends_on:
+      - postgres_db
+      - rabbitmq
+    environment:
+      - DB_HOST=postgres_db
+      - DB_PORT=5432
+      - DB_NAME=payments_db
+      - DB_USER=test_user
+      - DB_PASSWORD=12345
+      - RABBITMQ_URL=amqp://admin:12345@rabbitmq:5672/payments
+      - API_KEY=test-api-key
+    ports:
+      - "8010:8010"
+    volumes:
+      - ../async_payments_service:/app
+  payments_service_consumer:
+    build:
+      context: ../async_payments_service/
+      dockerfile: .deploy/Dockerfile
+    command: sh -c "sleep 20 && python -m src.entrypoints.consumer.main"
+    container_name: payments_service_consumer
+    depends_on:
+      - postgres_db
+      - rabbitmq
+    environment:
+      - DB_HOST=postgres_db
+      - DB_PORT=5432
+      - DB_NAME=payments_db
+      - DB_USER=test_user
+      - DB_PASSWORD=12345
+      - RABBITMQ_URL=amqp://admin:12345@rabbitmq:5672/payments
+    volumes:
+      - ../async_payments_service:/app
+
+volumes:
+  rabbitmq_data:
+  rabbitmq_log:

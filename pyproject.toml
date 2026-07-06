@@ -1,0 +1,32 @@
+[tool.poetry]
+name = "async-payments-service"
+version = "0.1.0"
+description = "The service accepts payment requests, processes them through an external payment gateway (emulation), and notifies the client of the result via a webhook."
+authors = ["Aleksandra Moleva"]
+readme = "README.md"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.12"
+
+alembic = "1.17.0"
+fastapi = "0.120.1"
+uvicorn = "0.38.0"
+pydantic = "2.12.5"
+pydantic-settings = "2.13.1"
+sqlalchemy = "2.0.43"
+asyncpg = "0.30.0"
+psycopg2 = "2.9.11"
+httpx = "0.28.1"
+tenacity = "9.1.2"
+APScheduler = "3.11.3"
+faststream = { version = "0.5.48", extras = ["rabbit"] }
+
+[tool.poetry.group.dev.dependencies]
+pytest = "8.4.2"
+pytest-asyncio = "0.24.0"
+faker = "40.27.0"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
